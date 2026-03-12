@@ -1,0 +1,33 @@
+#!/bin/bash
+if ! systemctl is-active --quiet wg-quick@08834wg; then
+    echo "VPN is already off"; exit 0
+fi
+
+IFACE=$(ip route | grep "192.168" | awk '{for(i=1;i<=NF;i++) if($i=="dev") print $(i+1)}' | head -1)
+
+sudo systemctl stop wg-quick@08834wg
+
+for comment in "wg-in" "wg-udp-in"; do
+    sudo nft -a list chain inet filter input | grep "\"$comment\"" | grep -o 'handle [0-9]*' | awk '{print $2}' | while read HANDLE; do
+        sudo nft delete rule inet filter input handle $HANDLE
+    done
+done
+for comment in "wg-out" "wg-udp-out"; do
+    sudo nft -a list chain inet filter output | grep "\"$comment\"" | grep -o 'handle [0-9]*' | awk '{print $2}' | while read HANDLE; do
+        sudo nft delete rule inet filter output handle $HANDLE
+    done
+done
+
+if [ ! -f /tmp/lan-state ]; then
+    sudo nft -f - << EOF
+add rule inet filter input  iifname "$IFACE" ip saddr 192.168.0.0/16 drop comment "bravo-in"
+add rule inet filter output oifname "$IFACE" ip daddr 192.168.0.0/16 drop comment "bravo-out"
+EOF
+fi
+
+sudo nft -f - << EOF
+add rule inet filter input  iifname "$IFACE" accept comment "alpha-in"
+add rule inet filter output oifname "$IFACE" accept comment "alpha-out"
+EOF
+
+echo "VPN off — real IP exposed, LAN: $([ -f /tmp/lan-state ] && echo open || echo blocked)"

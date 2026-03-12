@@ -1,0 +1,29 @@
+#!/bin/bash
+if [ ! -f /tmp/lan-state ]; then
+    echo "LAN is already blocked"; exit 0
+fi
+
+IFACE=$(ip route | grep "192.168" | awk '{for(i=1;i<=NF;i++) if($i=="dev") print $(i+1)}' | head -1)
+
+for comment in "lan-in"; do
+    sudo nft -a list chain inet filter input | grep "\"$comment\"" | grep -o 'handle [0-9]*' | awk '{print $2}' | while read HANDLE; do
+        sudo nft delete rule inet filter input handle $HANDLE
+    done
+done
+for comment in "lan-out"; do
+    sudo nft -a list chain inet filter output | grep "\"$comment\"" | grep -o 'handle [0-9]*' | awk '{print $2}' | while read HANDLE; do
+        sudo nft delete rule inet filter output handle $HANDLE
+    done
+done
+
+if ! systemctl is-active --quiet wg-quick@08834wg; then
+    ALPHA_IN=$(sudo nft -a list chain inet filter input | grep '"alpha-in"' | grep -o 'handle [0-9]*' | awk '{print $2}' | head -1)
+    ALPHA_OUT=$(sudo nft -a list chain inet filter output | grep '"alpha-out"' | grep -o 'handle [0-9]*' | awk '{print $2}' | head -1)
+    sudo nft -f - << EOF
+insert rule inet filter input  handle $ALPHA_IN  iifname "$IFACE" ip saddr 192.168.0.0/16 drop comment "bravo-in"
+insert rule inet filter output handle $ALPHA_OUT oifname "$IFACE" ip daddr 192.168.0.0/16 drop comment "bravo-out"
+EOF
+fi
+
+rm -f /tmp/lan-state
+echo "LAN blocked — VPN: $(systemctl is-active wg-quick@08834wg)"

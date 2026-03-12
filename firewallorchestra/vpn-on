@@ -1,0 +1,27 @@
+#!/bin/bash
+if systemctl is-active --quiet wg-quick@08834wg; then
+    echo "VPN is already on"; exit 0
+fi
+
+for comment in "alpha-in"; do
+    sudo nft -a list chain inet filter input | grep "\"$comment\"" | grep -o 'handle [0-9]*' | awk '{print $2}' | while read HANDLE; do
+        sudo nft delete rule inet filter input handle $HANDLE
+    done
+done
+for comment in "alpha-out"; do
+    sudo nft -a list chain inet filter output | grep "\"$comment\"" | grep -o 'handle [0-9]*' | awk '{print $2}' | while read HANDLE; do
+        sudo nft delete rule inet filter output handle $HANDLE
+    done
+done
+
+sudo nft -f - << 'EOF'
+add rule inet filter input  iifname "08834wg" accept comment "wg-in"
+add rule inet filter input  udp sport 51820 accept comment "wg-udp-in"
+add rule inet filter output oifname "08834wg" accept comment "wg-out"
+add rule inet filter output udp dport 51820 accept comment "wg-udp-out"
+EOF
+
+sudo systemctl start wg-quick@08834wg
+sudo systemctl restart tailscale-routes.service
+
+echo "VPN on — killswitch active, LAN: $([ -f /tmp/lan-state ] && echo open || echo blocked)"

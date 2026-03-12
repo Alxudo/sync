@@ -1,0 +1,24 @@
+# ~/.config/mako/config
+
+font=Poppins 10
+background-color=#1E1E2E
+text-color=#F2F2F2
+height=120
+outer-margin=12,12
+width=450
+border-color=#89B4FA
+border-size=2
+border-radius=10
+padding=12
+margin=10
+max-visible=3
+default-timeout=10000
+icon-path=/usr/share/icons
+layer=overlay
+anchor=top-right
+on-button-middle=dismiss-all
+max-icon-size=40
+icon-location=right
+icon-border-radius=12
+layer=overlay
+#progress-color=over #ffffffaa

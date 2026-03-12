@@ -1,0 +1,5 @@
+brillo
+localsend
+ttf-poppins
+speedtest-go
+xdg-ninja

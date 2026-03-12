@@ -1,0 +1,25 @@
+#!/bin/bash
+if [ -f /tmp/lan-state ]; then
+    echo "LAN is already open"; exit 0
+fi
+
+IFACE=$(ip route | grep "192.168" | awk '{for(i=1;i<=NF;i++) if($i=="dev") print $(i+1)}' | head -1)
+
+for comment in "bravo-in"; do
+    sudo nft -a list chain inet filter input | grep "\"$comment\"" | grep -o 'handle [0-9]*' | awk '{print $2}' | while read HANDLE; do
+        sudo nft delete rule inet filter input handle $HANDLE
+    done
+done
+for comment in "bravo-out"; do
+    sudo nft -a list chain inet filter output | grep "\"$comment\"" | grep -o 'handle [0-9]*' | awk '{print $2}' | while read HANDLE; do
+        sudo nft delete rule inet filter output handle $HANDLE
+    done
+done
+
+sudo nft -f - << EOF
+add rule inet filter input  iifname "$IFACE" ip saddr 192.168.0.0/16 accept comment "lan-in"
+add rule inet filter output oifname "$IFACE" ip daddr 192.168.0.0/16 accept comment "lan-out"
+EOF
+
+touch /tmp/lan-state
+echo "LAN open — VPN: $(systemctl is-active wg-quick@08834wg)"
