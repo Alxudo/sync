@@ -1,0 +1,8 @@
+ttf-poppins
+brillo
+localsend-bin
+xdg-ninja
+cbonsai
+peaclock
+lavat-git
+yay

@@ -33,8 +33,6 @@ wofi
 expac
 hping
 wireless_tools
-ttf-poppins
-brillo
 grub-btrfs
 snap-pac
 inotify-tools
@@ -44,15 +42,10 @@ bat
 sane
 waybar
 wireguard-tools
-localsend-bin
-xdg-ninja
 nftables
 sane-airscan
 figlet
-cbonsai
-peaclock
 nyancat
-lavat-git
 python-pytz
 xpdf
 dunst
@@ -120,7 +113,6 @@ webkit2gtk-4.1
 wget
 wireshark-cli
 yt-dlp
-yay
 pipewire
 pipewire-alsa
 pipewire-jack
